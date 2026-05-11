@@ -365,14 +365,14 @@ static void test_real_data_consistency(const char *json_path, const char *pln_pa
    ═══════════════════════════════════════════════════════════════ */
 
 static void bench_real_data(const char *json_path, const char *pln_path) {
-    printf("\n── 性能基准 (50000次迭代) ──\n");
+    printf("\n── 性能基准 (%d次迭代) ──\n", N);
 
     int json_len, pln_len;
     char *json_text = read_file(json_path, &json_len);
     char *pln_text  = read_file(pln_path, &pln_len);
     if (!json_text || !pln_text) { printf("  SKIP\n"); free(json_text); free(pln_text); return; }
 
-    int N = 50000;
+    int N = 5000;
     double t0, t1;
 
     /* cJSON 解析 */

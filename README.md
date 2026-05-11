@@ -28,12 +28,12 @@ gcc -O2 -o test test.c popline.c popline_parser.c popline_json.c -lcjson -lm && 
 
 ## 性能
 
-测试数据：`package.json`（17011 B）→ `package.pln`（13074 B，**76.9%**），50000 次迭代
+测试数据：`package.json`（17011 B）→ `package.pln`（13074 B，**76.9%**），5000 次迭代
 
 | 操作 | JSON (cJSON) | PopLine | 比 |
 |------|-------------|---------|------|
-| 解析 | 4954 ms (99 µs/op) | 3718 ms (74 µs/op) | **0.75x** |
-| 序列化 | 2692 ms (54 µs/op) | 1742 ms (35 µs/op) | **0.65x** |
+| 解析 | 520 ms (104 µs/op) | 387 ms (77 µs/op) | **0.74x** |
+| 序列化 | 275 ms (55 µs/op) | 186 ms (37 µs/op) | **0.68x** |
 
 依赖：`libcjson-dev`（`apt install libcjson-dev`）
 

@@ -116,7 +116,7 @@ static void unit_nesting(void) {
     CHECK(v && v->child->type == PLN_OBJECT && v->child->child->type == PLN_STRING, "嵌套对象", "failed");
     pln_value_free(v);
 
-    v = pln_loads("[\n[\n1\n2\n1 [\n3\n");
+    v = pln_loads("[[\n1\n2\n1 [\n3\n");
     CHECK(v && v->type == PLN_ARRAY && v->child->type == PLN_ARRAY, "嵌套数组", "failed");
     pln_value_free(v);
 
@@ -365,14 +365,13 @@ static void test_real_data_consistency(const char *json_path, const char *pln_pa
    ═══════════════════════════════════════════════════════════════ */
 
 static void bench_real_data(const char *json_path, const char *pln_path) {
+    int N = 5000;
     printf("\n── 性能基准 (%d次迭代) ──\n", N);
 
     int json_len, pln_len;
     char *json_text = read_file(json_path, &json_len);
     char *pln_text  = read_file(pln_path, &pln_len);
     if (!json_text || !pln_text) { printf("  SKIP\n"); free(json_text); free(pln_text); return; }
-
-    int N = 5000;
     double t0, t1;
 
     /* cJSON 解析 */

@@ -130,21 +130,24 @@ static void unit_pop(void) {
     printf("── 弹出机制 ──\n");
     pln_value_t *v;
 
-    v = pln_loads("{\nouter: {\ninner: \"value\"\n1 mid: \"other\"\n");
-    CHECK(v && v->child && v->child->next, "弹出1层", "failed");
-    CHECK(strcmp(v->child->key, "outer") == 0 && strcmp(v->child->next->key, "mid") == 0, "弹出键名", "mismatch");
+    v = pln_loads("{\nouter: {\ninner: \"value\"\nmid: \"other\" 1\n");
+    CHECK(v && v->child && v->child->type == PLN_OBJECT, "弹出1层(值先入)", "failed");
+    CHECK(v->child->child && v->child->child->next, "内层应有2键", "failed");
+    CHECK(strcmp(v->child->child->key, "inner") == 0 && strcmp(v->child->child->next->key, "mid") == 0, "键mid在内层(后缀)", "mismatch");
     pln_value_free(v);
 
-    v = pln_loads("{\na: {\nb: {\nc: \"deep\"\n2 x: \"top\"\n");
-    pln_value_t *c1 = v->child, *c2 = c1->next;
-    CHECK(c1 && strcmp(c1->key, "a") == 0 && c2 && strcmp(c2->key, "x") == 0, "批量弹出2层", "failed");
+    v = pln_loads("{\na: {\nb: {\nc: \"deep\"\nx: \"top\" 2\n");
+    CHECK(v && v->child && v->child->type == PLN_OBJECT, "批量弹出2层", "failed");
+    pln_value_t *innerb = v->child->child;
+    CHECK(innerb->child && innerb->child->next, "b应含c和x", "failed");
+    CHECK(strcmp(innerb->child->key, "c") == 0 && strcmp(innerb->child->next->key, "x") == 0, "x在b内(后缀)", "mismatch");
     pln_value_free(v);
 
     v = pln_loads("{\na: {\nb: 1\n");
     CHECK(v && v->child->type == PLN_OBJECT, "EOF自动关闭(对象)", "should be object");
     pln_value_free(v);
 
-    v = pln_loads("[\n[\n1\n");
+    v = pln_loads("[[\n1\n");
     CHECK(v, "EOF自动关闭(数组)", "failed");
     pln_value_free(v);
 }
@@ -194,9 +197,9 @@ static void unit_roundtrip(void) {
     struct { const char *name; const char *pl; } cases[] = {
         {"简单",     "{\na: 1\n"},
         {"多键值",   "{\na: 1\nb: 2\nc: 3\n"},
-        {"嵌套",     "{\na: {\nb: 1\nc: 2\n1 d: 3\n"},
+        {"嵌套",     "{\na: {\nb: 1\nc: 2 1\nd: 3\n"},
         {"数组",     "[\n1\n2\n3\n"},
-        {"混合",     "{\na: [\n1\n2\n1 b: true\n"},
+        {"混合",     "{\na: [\n1\n2 1\nb: true\n"},
         {"布尔空",   "{\na: true\nb: false\nc: null\n"},
         {"浮点",     "{\na: 3.14159\n"},
     };

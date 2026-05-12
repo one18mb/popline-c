@@ -116,7 +116,7 @@ static void unit_nesting(void) {
     CHECK(v && v->child->type == PLN_OBJECT && v->child->child->type == PLN_STRING, "嵌套对象", "failed");
     pln_value_free(v);
 
-    v = pln_loads("[[\n1\n2 1\n[\n3\n");
+    v = pln_loads("[\n[\n1\n2 1\n[\n3\n");
     CHECK(v && v->type == PLN_ARRAY && v->child->type == PLN_ARRAY, "嵌套数组", "failed");
     pln_value_free(v);
 
@@ -147,7 +147,7 @@ static void unit_pop(void) {
     CHECK(v && v->child->type == PLN_OBJECT, "EOF自动关闭(对象)", "should be object");
     pln_value_free(v);
 
-    v = pln_loads("[[\n1\n");
+    v = pln_loads("[\n[\n1\n");
     CHECK(v, "EOF自动关闭(数组)", "failed");
     pln_value_free(v);
 }

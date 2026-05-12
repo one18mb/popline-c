@@ -48,3 +48,8 @@ gcc -O2 -o test test.c popline.c popline_parser.c popline_json.c -lcjson -lm && 
 | `test.c` | 完整测试（单元测试 + JSON 一致性 + 基准） |
 | `package.json` | 测试数据 |
 | `package.pln` | PopLine 测试数据 |
+
+## 致谢
+本项目的开发得到了以下 AI 工具的大力协助：
+- [Claude Code](https://claude.ai)（Anthropic）
+- [DeepSeek](https://deepseek.com)（深度求索）

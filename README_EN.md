@@ -46,3 +46,8 @@ Data: `package.json` (17011 B) / `package.pln` (13074 B, 76.9%)
 | `popline_parser.c` | Parser `pln_loads` |
 | `popline_json.c` | JSON conversion |
 | `test.c` | Unit tests + JSON consistency + benchmark |
+
+## Acknowledgments
+This project was developed with the assistance of:
+- [Claude Code](https://claude.ai) (Anthropic)
+- [DeepSeek](https://deepseek.com) (DeepSeek)

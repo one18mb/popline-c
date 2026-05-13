@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <math.h>
 #include "popline.h"
 
 /* ═══════════════════════════════════════════════════════════════
@@ -225,13 +224,8 @@ static void unit_scalar_root(void) {
 static void unit_scalar_roundtrip(void) {
     printf("── 标量根值往返 ──\n");
     struct { const char *name; const char *pl; } cases[] = {
-        {"整数",     "42"},
-        {"负整数",   "-42"},
-        {"浮点",     "3.14159"},
-        {"字符串",   "\"hello\""},
-        {"布尔真",   "true"},
-        {"布尔假",   "false"},
-        {"null",     "null"},
+        {"整数", "42"}, {"负整数", "-42"}, {"浮点", "3.14159"},
+        {"字符串", "\"hello\""}, {"布尔真", "true"}, {"布尔假", "false"}, {"null", "null"},
     };
     for (int i = 0; i < 7; i++) {
         pln_value_t *v1 = pln_loads(cases[i].pl);
@@ -247,21 +241,17 @@ static void unit_empty_lines(void) {
     printf("── 空行 ──\n");
     pln_value_t *v;
 
-    /* 容器内空行非法 */
     v = pln_loads("{\n\nkey: 1\n");
     CHECK(v == NULL, "容器内空行", "should fail");
 
-    /* 空行在根之前合法 */
     v = pln_loads("\n\n{\nkey: 1\n");
     CHECK(v && v->type == PLN_OBJECT, "根前空行", "should succeed");
     pln_value_free(v);
 
-    /* 消息后空行合法（帧已闭合） */
     v = pln_loads("{\na: 1 1\n\n");
     CHECK(v && v->type == PLN_OBJECT, "闭合后空行", "should succeed");
     pln_value_free(v);
 
-    /* 标量根值后空行合法 */
     v = pln_loads("42\n\n");
     CHECK(v && v->type == PLN_INT, "标量后空行", "should succeed");
     pln_value_free(v);
@@ -270,13 +260,10 @@ static void unit_empty_lines(void) {
 static void unit_roundtrip(void) {
     printf("── 往返测试 ──\n");
     struct { const char *name; const char *pl; } cases[] = {
-        {"简单",     "{\na: 1\n"},
-        {"多键值",   "{\na: 1\nb: 2\nc: 3\n"},
-        {"嵌套",     "{\na: {\nb: 1\nc: 2 1\nd: 3\n"},
-        {"数组",     "[\n1\n2\n3\n"},
-        {"混合",     "{\na: [\n1\n2 1\nb: true\n"},
-        {"布尔空",   "{\na: true\nb: false\nc: null\n"},
-        {"浮点",     "{\na: 3.14159\n"},
+        {"简单", "{\na: 1\n"}, {"多键值", "{\na: 1\nb: 2\nc: 3\n"},
+        {"嵌套", "{\na: {\nb: 1\nc: 2 1\nd: 3\n"}, {"数组", "[\n1\n2\n3\n"},
+        {"混合", "{\na: [\n1\n2 1\nb: true\n"}, {"布尔空", "{\na: true\nb: false\nc: null\n"},
+        {"浮点", "{\na: 3.14159\n"},
     };
     for (int i = 0; i < 7; i++) {
         pln_value_t *v1 = pln_loads(cases[i].pl);
@@ -353,60 +340,56 @@ static void unit_edge(void) {
    真实数据一致性验证
    ═══════════════════════════════════════════════════════════════ */
 
-static void test_real_data_consistency(const char *json_path, const char *pln_path) {
+static void test_real_data_consistency(const char *pln_path) {
     printf("\n── 真实数据一致性 ──\n");
+    int pln_len;
+    char *pln_text = read_file(pln_path, &pln_len);
+    if (!pln_text) { printf("  SKIP\n"); free(pln_text); return; }
+    printf("  数据: PopLine=%d B\n", pln_len);
 
-    int json_len, pln_len;
-    char *json_text = read_file(json_path, &json_len);
-    char *pln_text  = read_file(pln_path, &pln_len);
-
-    if (!json_text || !pln_text) {
-        printf("  SKIP: 无法读取数据文件\n");
-        free(json_text); free(pln_text);
-        return;
+    pln_value_t *v = pln_loads(pln_text);
+    CHECK(v != NULL, "PopLine解析", "failed");
+    if (v) {
+        char *s = pln_dumps(v);
+        pln_value_t *v2 = s ? pln_loads(s) : NULL;
+        CHECK(v2 && dom_equal(v, v2), "PopLine往返", v2 ? "mismatch" : "reparse failed");
+        free(s); pln_value_free(v2); pln_value_free(v);
     }
+    free(pln_text);
+}
 
-    printf("  数据: JSON=%d B, PopLine=%d B (%.1f%%)\n",
-           json_len, pln_len, pln_len * 100.0 / json_len);
+/* ═══════════════ 性能基准 ═══════════════ */
 
-    /* PopLine 往返一致性 */
-    {
-        pln_value_t *v = pln_loads(pln_text);
-        CHECK(v != NULL, "PopLine解析", "failed");
-        if (v) {
-            char *s = pln_dumps(v);
-            pln_value_t *v2 = s ? pln_loads(s) : NULL;
-            CHECK(v2 && dom_equal(v, v2), "PopLine往返", v2 ? "mismatch" : "reparse failed");
-            free(s); pln_value_free(v2); pln_value_free(v);
-        }
-    }
+static void bench_pln(const char *pln_path) {
+    int N = 5000;
+    printf("\n── 性能基准 (%d次迭代) ──\n", N);
+    int pln_len;
+    char *pln_text = read_file(pln_path, &pln_len);
+    if (!pln_text) { printf("  SKIP\n"); free(pln_text); return; }
 
-    free(json_text); free(pln_text);
+    double t0 = now_ms();
+    for (int i = 0; i < N; i++) { pln_value_t *v = pln_loads(pln_text); if (v) pln_value_free(v); }
+    double t1 = now_ms();
+    printf("  %-26s %8.1f ms\n", "PopLine 解析", t1 - t0);
+
+    pln_value_t *ptree = pln_loads(pln_text);
+    t0 = now_ms();
+    for (int i = 0; i < N; i++) { char *s = pln_dumps(ptree); free(s); }
+    t1 = now_ms();
+    pln_value_free(ptree);
+    printf("  %-26s %8.1f ms\n", "PopLine 序列化", t1 - t0);
+    free(pln_text);
 }
 
 /* ═══════════════════════════════════════════════════════════════ */
 
 int main(void) {
-    printf("PopLine v2 完整测试\n");
-    printf("==================\n\n");
-
-    unit_basic_types();
-    unit_nesting();
-    unit_pop();
-    unit_strings();
-    unit_keys();
-    unit_errors();
-    unit_scalar_root();
-    unit_scalar_roundtrip();
-    unit_empty_lines();
-    unit_roundtrip();
-    unit_dom();
-    unit_stream();
-    unit_edge();
-
-    test_real_data_consistency("package.json", "package.pln");
-
-    printf("\n──────────────────────\n");
-    printf("%d/%d 通过, %d 失败\n", passed, total, total - passed);
+    printf("PopLine C 参考实现 — 完整测试\n============================\n\n");
+    unit_basic_types(); unit_nesting(); unit_pop(); unit_strings();
+    unit_keys(); unit_errors(); unit_scalar_root(); unit_scalar_roundtrip();
+    unit_empty_lines(); unit_roundtrip(); unit_dom(); unit_stream(); unit_edge();
+    test_real_data_consistency("package.pln");
+    bench_pln("package.pln");
+    printf("\n──────────────────────\n%d/%d 通过, %d 失败\n", passed, total, total - passed);
     return passed == total ? 0 : 1;
 }

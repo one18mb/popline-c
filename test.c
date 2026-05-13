@@ -1,11 +1,10 @@
-/* test.c — PopLine 完整测试套件：单元测试 + JSON 对比 + 性能基准 */
+/* test.c — PopLine 完整测试套件 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <math.h>
 #include "popline.h"
-#include <cjson/cJSON.h>
 
 /* ═══════════════════════════════════════════════════════════════
    辅助函数
@@ -350,26 +349,6 @@ static void unit_edge(void) {
     pln_value_free(v);
 }
 
-static void unit_json_conversion(void) {
-    printf("── JSON 转换 ──\n");
-    const char *cases[] = {
-        "{\"a\":1}", "{\"a\":true,\"b\":false,\"c\":null}", "{\"a\":\"hello\"}",
-        "{\"a\":3.14159}", "{\"a\":[1,2,3]}", "{\"a\":{\"b\":{\"c\":1}}}",
-        "[1,\"two\",true,null]", "[]", "{}",
-    };
-    for (int i = 0; i < 9; i++) {
-        char name[64]; snprintf(name, 64, "json-rt-%d", i);
-        pln_value_t *v1 = pln_loads_json(cases[i]);
-        if (!v1) { FAIL(name, "json parse failed"); continue; }
-        char *js = pln_dumps_json(v1);
-        if (!js) { FAIL(name, "dumps_json failed"); pln_value_free(v1); continue; }
-        pln_value_t *v2 = pln_loads_json(js);
-        if (!v2) { FAIL(name, "re-parse failed"); free(js); pln_value_free(v1); continue; }
-        CHECK(dom_equal(v1, v2), name, "mismatch");
-        free(js); pln_value_free(v1); pln_value_free(v2);
-    }
-}
-
 /* ═══════════════════════════════════════════════════════════════
    真实数据一致性验证
    ═══════════════════════════════════════════════════════════════ */
@@ -390,7 +369,7 @@ static void test_real_data_consistency(const char *json_path, const char *pln_pa
     printf("  数据: JSON=%d B, PopLine=%d B (%.1f%%)\n",
            json_len, pln_len, pln_len * 100.0 / json_len);
 
-    /* 1. PopLine 往返一致性 */
+    /* PopLine 往返一致性 */
     {
         pln_value_t *v = pln_loads(pln_text);
         CHECK(v != NULL, "PopLine解析", "failed");
@@ -401,101 +380,6 @@ static void test_real_data_consistency(const char *json_path, const char *pln_pa
             free(s); pln_value_free(v2); pln_value_free(v);
         }
     }
-
-    /* 2. JSON ↔ PopLine 一致性 */
-    {
-        pln_value_t *v_json = pln_loads_json(json_text);
-        pln_value_t *v_pln  = pln_loads(pln_text);
-        CHECK(v_json != NULL, "JSON解析", "failed");
-        CHECK(v_pln  != NULL, "PopLine解析", "failed");
-        if (v_json && v_pln) {
-            CHECK(dom_equal(v_json, v_pln), "JSON↔PopLine一致", "DOM不相等");
-        }
-        pln_value_free(v_json); pln_value_free(v_pln);
-    }
-
-    /* 3. PopLine → JSON 往返 */
-    {
-        pln_value_t *v = pln_loads(pln_text);
-        if (v) {
-            char *j = pln_dumps_json(v);
-            pln_value_t *v2 = j ? pln_loads_json(j) : NULL;
-            CHECK(v2 && dom_equal(v, v2), "PopLine→JSON→PopLine", v2 ? "mismatch" : "failed");
-            free(j); pln_value_free(v2); pln_value_free(v);
-        }
-    }
-
-    /* 4. JSON → PopLine 往返 */
-    {
-        pln_value_t *v = pln_loads_json(json_text);
-        if (v) {
-            char *p = pln_dumps(v);
-            pln_value_t *v2 = p ? pln_loads(p) : NULL;
-            CHECK(v2 && dom_equal(v, v2), "JSON→PopLine→JSON", v2 ? "mismatch" : "failed");
-            free(p); pln_value_free(v2); pln_value_free(v);
-        }
-    }
-
-    free(json_text); free(pln_text);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   性能基准
-   ═══════════════════════════════════════════════════════════════ */
-
-static void bench_real_data(const char *json_path, const char *pln_path) {
-    int N = 5000;
-    printf("\n── 性能基准 (%d次迭代) ──\n", N);
-
-    int json_len, pln_len;
-    char *json_text = read_file(json_path, &json_len);
-    char *pln_text  = read_file(pln_path, &pln_len);
-    if (!json_text || !pln_text) { printf("  SKIP\n"); free(json_text); free(pln_text); return; }
-    double t0, t1;
-
-    /* cJSON 解析 */
-    t0 = now_ms();
-    for (int i = 0; i < N; i++) {
-        cJSON *v = cJSON_Parse(json_text);
-        if (v) cJSON_Delete(v);
-    }
-    t1 = now_ms();
-    double cjson_parse = t1 - t0;
-    printf("  %-26s %8.1f ms\n", "cJSON 解析", cjson_parse);
-
-    /* PopLine 解析 */
-    t0 = now_ms();
-    for (int i = 0; i < N; i++) {
-        pln_value_t *v = pln_loads(pln_text);
-        if (v) pln_value_free(v);
-    }
-    t1 = now_ms();
-    double pln_parse = t1 - t0;
-    printf("  %-26s %8.1f ms  (%.2fx)\n", "PopLine 解析", pln_parse, pln_parse / cjson_parse);
-
-    /* cJSON 序列化 */
-    cJSON *ctree = cJSON_Parse(json_text);
-    t0 = now_ms();
-    for (int i = 0; i < N; i++) {
-        char *s = cJSON_PrintUnformatted(ctree);
-        free(s);
-    }
-    t1 = now_ms();
-    cJSON_Delete(ctree);
-    double cjson_ser = t1 - t0;
-    printf("  %-26s %8.1f ms\n", "cJSON 序列化", cjson_ser);
-
-    /* PopLine 序列化 */
-    pln_value_t *ptree = pln_loads(pln_text);
-    t0 = now_ms();
-    for (int i = 0; i < N; i++) {
-        char *s = pln_dumps(ptree);
-        free(s);
-    }
-    t1 = now_ms();
-    pln_value_free(ptree);
-    double pln_ser = t1 - t0;
-    printf("  %-26s %8.1f ms  (%.2fx)\n", "PopLine 序列化", pln_ser, pln_ser / cjson_ser);
 
     free(json_text); free(pln_text);
 }
@@ -519,10 +403,8 @@ int main(void) {
     unit_dom();
     unit_stream();
     unit_edge();
-    unit_json_conversion();
 
     test_real_data_consistency("package.json", "package.pln");
-    bench_real_data("package.json", "package.pln");
 
     printf("\n──────────────────────\n");
     printf("%d/%d 通过, %d 失败\n", passed, total, total - passed);

@@ -31,7 +31,7 @@ gcc -O2 -o test test.c popline.c popline_parser.c -lm && ./test
 
 ## 性能
 
-测试数据：`package.json`（17011 B）→ `package.pln`（13076 B，**76.9%**），5000 次迭代
+测试数据：`test-package.json`（17011 B）→ `test-package.pln`（13076 B，**76.9%**），5000 次迭代
 
 | 操作 | JSON (cJSON) | PopLine | 比 |
 |------|-------------|---------|------|
@@ -49,8 +49,8 @@ gcc -O2 -o test test.c popline.c popline_parser.c -lm && ./test
 | `sax_formats.c` | SAX 格式转换器（共享于 CLI） |
 | `fmt_json.c` | DOM 格式转换（共享于 CLI） |
 | `test.c` | 完整测试 |
-| `package.json` | 测试数据 |
-| `package.pln` | PopLine 测试数据 |
+| `test-package.json` | 测试数据 |
+| `test-package.pln` | PopLine 测试数据 |
 
 ## 致谢
 本项目的开发得到了以下 AI 工具的大力协助：

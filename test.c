@@ -388,8 +388,8 @@ int main(void) {
     unit_basic_types(); unit_nesting(); unit_pop(); unit_strings();
     unit_keys(); unit_errors(); unit_scalar_root(); unit_scalar_roundtrip();
     unit_empty_lines(); unit_roundtrip(); unit_dom(); unit_stream(); unit_edge();
-    test_real_data_consistency("package.pln");
-    bench_pln("package.pln");
+    test_real_data_consistency("test-package.pln");
+    bench_pln("test-package.pln");
     printf("\n──────────────────────\n%d/%d 通过, %d 失败\n", passed, total, total - passed);
     return passed == total ? 0 : 1;
 }

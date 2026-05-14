@@ -30,7 +30,7 @@ Requires: `libcjson-dev` (`apt install libcjson-dev`)
 
 ## Performance
 
-Data: `package.json` (17011 B) / `package.pln` (13074 B, 76.9%)
+Data: `test-package.json` (17011 B) / `test-package.pln` (13074 B, 76.9%)
 
 | Operation | JSON (cJSON) | PopLine | Ratio |
 |-----------|-------------|---------|-------|

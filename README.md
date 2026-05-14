@@ -35,8 +35,8 @@ gcc -O2 -o test test.c popline.c popline_parser.c -lm && ./test
 
 | 操作 | JSON (cJSON) | PopLine | 比 |
 |------|-------------|---------|------|
-| 解析 | — | — | **0.73x** |
-| 序列化 | — | — | **0.63x** |
+| 解析 | 582 ms (116 µs/op) | 496 ms (99 µs/op) | **0.85x** |
+| 序列化 | 260 ms (52 µs/op) | 153 ms (31 µs/op) | **0.59x** |
 
 ## 文件
 

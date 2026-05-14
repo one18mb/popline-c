@@ -1,7 +1,3 @@
 *.o
 *.so
-*.out
 test
-test_*
-bench_*
-pln-*

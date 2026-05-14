@@ -7,7 +7,7 @@ PopLine 序列化格式的 C 参考实现。
 ```c
 #include "popline.h"
 
-// 解析
+// 解析（DOM）
 pln_value_t *v = pln_loads("{\nkey: \"value\"\n");
 
 // 序列化
@@ -15,37 +15,40 @@ char *s = pln_dumps(v);
 free(s);
 pln_value_free(v);
 
-// JSON 互转
-pln_value_t *jv = pln_loads_json("{\"key\":\"value\"}");
-char *js = pln_dumps_json(jv);
+// SAX 解析（事件驱动，零 DOM）
+int cb(const pln_sax_ev_t *ev, void *u) {
+    /* 处理事件... */ return 0;
+}
+pln_sax_parse(text, cb, user_data);
 ```
 
 ## 构建与测试
 
 ```bash
-gcc -O2 -o test test.c popline.c popline_parser.c popline_json.c -lcjson -lm && ./test
+# 纯 PopLine 测试
+gcc -O2 -o test test.c popline.c popline_parser.c -lm && ./test
 ```
 
 ## 性能
 
-测试数据：`package.json`（17011 B）→ `package.pln`（13074 B，**76.9%**），5000 次迭代
+测试数据：`package.json`（17011 B）→ `package.pln`（13076 B，**76.9%**），5000 次迭代
 
 | 操作 | JSON (cJSON) | PopLine | 比 |
 |------|-------------|---------|------|
-| 解析 | 520 ms (104 µs/op) | 387 ms (77 µs/op) | **0.74x** |
-| 序列化 | 275 ms (55 µs/op) | 186 ms (37 µs/op) | **0.68x** |
-
-依赖：`libcjson-dev`（`apt install libcjson-dev`）
+| 解析 | — | — | **0.73x** |
+| 序列化 | — | — | **0.63x** |
 
 ## 文件
 
 | 文件 | 说明 |
 |------|------|
-| `popline.h` | 公共头文件 |
-| `popline.c` | 核心（DOM 类型、生成器 `pln_dumps`） |
-| `popline_parser.c` | 解析器 `pln_loads` |
-| `popline_json.c` | JSON 双向转换 `pln_loads_json`/`pln_dumps_json` |
-| `test.c` | 完整测试（单元测试 + JSON 一致性 + 基准） |
+| `popline.h` | 公共头文件（DOM + 生成器 API） |
+| `popline.c` | 核心（DOM、生成器 `pln_gen_*`、`pln_dumps`） |
+| `popline_parser.c` | DOM 解析器 `pln_loads` |
+| `popline_sax.c` | SAX 解析器 `pln_sax_parse`（共享于 CLI） |
+| `sax_formats.c` | SAX 格式转换器（共享于 CLI） |
+| `fmt_json.c` | DOM 格式转换（共享于 CLI） |
+| `test.c` | 完整测试 |
 | `package.json` | 测试数据 |
 | `package.pln` | PopLine 测试数据 |
 
